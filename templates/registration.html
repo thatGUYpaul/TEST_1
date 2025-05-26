@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Your App</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .register-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            max-width: 450px;
+            width: 100%;
+        }
+        
+        .register-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .register-body {
+            padding: 2rem;
+        }
+        
+        .form-floating > .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-floating > .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .form-floating > .form-control.is-valid {
+            border-color: #28a745;
+        }
+        
+        .form-floating > .form-control.is-invalid {
+            border-color: #dc3545;
+        }
+        
+        .btn-register {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .form-check-input:checked {
+            background-color: #667eea;
+            border-color: #667eea;
+        }
+        
+        .password-toggle {
+            background: transparent;
+            border: 2px solid #e9ecef;
+            border-left: none;
+            border-radius: 0 12px 12px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .password-toggle:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .signin-link {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+            margin-top: 1rem;
+        }
+        
+        .signin-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .signin-link a:hover {
+            color: #764ba2;
+        }
+        
+        .password-strength {
+            height: 4px;
+            border-radius: 2px;
+            margin-top: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .strength-weak { background-color: #dc3545; }
+        .strength-medium { background-color: #ffc107; }
+        .strength-strong { background-color: #28a745; }
+        
+        .password-requirements {
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        
+        .requirement {
+            color: #6c757d;
+            transition: color 0.3s ease;
+        }
+        
+        .requirement.met {
+            color: #28a745;
+        }
+        
+        .terms-link {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .terms-link:hover {
+            color: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="register-container">
+                    <div class="register-header">
+                        <i class="fas fa-user-plus fa-3x mb-3"></i>
+                        <h2 class="mb-0">Create Account</h2>
+                        <p class="mb-0 opacity-75">Join us today</p>
+                    </div>
+                    
+                    <div class="register-body">
+                        <form method="POST" action="{{ url_for('register') }}">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="username" name="username" placeholder="Username" required>
+                                <label for="username"><i class="fas fa-user me-2"></i>Username</label>
+                                <div class="invalid-feedback">
+                                    Username must be 3-20 characters long.
+                                </div>
+                            </div>
+                            
+                            <div class="form-floating mb-3">
+                                <input type="email" class="form-control" id="email" name="email" placeholder="name@example.com" required>
+                                <label for="email"><i class="fas fa-envelope me-2"></i>Email address</label>
+                                <div class="invalid-feedback">
+                                    Please provide a valid email address.
+                                </div>
+                            </div>
+                            
+                            <div class="input-group mb-3">
+                                <div class="form-floating flex-grow-1">
+                                    <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
+                                    <label for="password"><i class="fas fa-lock me-2"></i>Password</label>
+                                </div>
+                                <button class="btn password-toggle" type="button" id="togglePassword">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="password-strength" id="passwordStrength"></div>
+                            <div class="password-requirements">
+                                <div class="requirement" id="length"><i class="fas fa-times me-1"></i>At least 8 characters</div>
+                                <div class="requirement" id="uppercase"><i class="fas fa-times me-1"></i>One uppercase letter</div>
+                                <div class="requirement" id="lowercase"><i class="fas fa-times me-1"></i>One lowercase letter</div>
+                                <div class="requirement" id="number"><i class="fas fa-times me-1"></i>One number</div>
+                            </div>
+                            
+                            <div class="input-group mb-3 mt-3">
+                                <div class="form-floating flex-grow-1">
+                                    <input type="password" class="form-control" id="confirmPassword" name="confirm_password" placeholder="Confirm Password" required>
+                                    <label for="confirmPassword"><i class="fas fa-lock me-2"></i>Confirm Password</label>
+                                </div>
+                                <button class="btn password-toggle" type="button" id="toggleConfirmPassword">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div id="passwordMatch" class="invalid-feedback d-none">
+                                Passwords do not match.
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary btn-register w-100 mb-3">
+                                <i class="fas fa-user-plus me-2"></i>Create Account
+                            </button>
+                        </form>
+                        
+                        <div class="signin-link">
+                            Already have an account? <a href="{{ url_for('login') }}">Sign in here</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Password toggle functionality
+        function setupPasswordToggle(toggleId, passwordId) {
+            const toggle = document.getElementById(toggleId);
+            const password = document.getElementById(passwordId);
+            
+            toggle.addEventListener('click', function() {
+                const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+                password.setAttribute('type', type);
+                
+                const icon = this.querySelector('i');
+                icon.classList.toggle('fa-eye');
+                icon.classList.toggle('fa-eye-slash');
+            });
+        }
+        
+        setupPasswordToggle('togglePassword', 'password');
+        setupPasswordToggle('toggleConfirmPassword', 'confirmPassword');
+        
+        // Email validation
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+        
+        // Username validation
+        function validateUsername(username) {
+            return username.length >= 3 && username.length <= 20;
+        }
+        
+        // Password strength checker
+        function checkPasswordStrength(password) {
+            let strength = 0;
+            const requirements = {
+                length: password.length >= 8,
+                uppercase: /[A-Z]/.test(password),
+                lowercase: /[a-z]/.test(password),
+                number: /\d/.test(password)
+            };
+            
+            // Update requirement indicators
+            Object.keys(requirements).forEach(req => {
+                const element = document.getElementById(req);
+                const icon = element.querySelector('i');
+                
+                if (requirements[req]) {
+                    element.classList.add('met');
+                    icon.className = 'fas fa-check me-1';
+                    strength++;
+                } else {
+                    element.classList.remove('met');
+                    icon.className = 'fas fa-times me-1';
+                }
+            });
+            
+            // Update strength bar
+            const strengthBar = document.getElementById('passwordStrength');
+            if (strength < 2) {
+                strengthBar.className = 'password-strength strength-weak';
+                strengthBar.style.width = '33%';
+            } else if (strength < 4) {
+                strengthBar.className = 'password-strength strength-medium';
+                strengthBar.style.width = '66%';
+            } else {
+                strengthBar.className = 'password-strength strength-strong';
+                strengthBar.style.width = '100%';
+            }
+            
+            return strength >= 4;
+        }
+        
+        // Real-time validation
+        document.getElementById('email').addEventListener('input', function() {
+            const isValid = validateEmail(this.value);
+            this.classList.toggle('is-valid', isValid);
+            this.classList.toggle('is-invalid', !isValid && this.value.length > 0);
+        });
+        
+        document.getElementById('username').addEventListener('input', function() {
+            const isValid = validateUsername(this.value);
+            this.classList.toggle('is-valid', isValid);
+            this.classList.toggle('is-invalid', !isValid && this.value.length > 0);
+        });
+        
+        document.getElementById('password').addEventListener('input', function() {
+            const isValid = checkPasswordStrength(this.value);
+            this.classList.toggle('is-valid', isValid);
+            this.classList.toggle('is-invalid', !isValid && this.value.length > 0);
+            
+            // Check password match
+            const confirmPassword = document.getElementById('confirmPassword');
+            if (confirmPassword.value) {
+                checkPasswordMatch();
+            }
+        });
+        
+        function checkPasswordMatch() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const matchIndicator = document.getElementById('passwordMatch');
+            
+            if (confirmPassword && password !== confirmPassword) {
+                confirmPassword.classList.add('is-invalid');
+                confirmPassword.classList.remove('is-valid');
+                matchIndicator.classList.remove('d-none');
+                return false;
+            } else if (confirmPassword) {
+                confirmPassword.classList.add('is-valid');
+                confirmPassword.classList.remove('is-invalid');
+                matchIndicator.classList.add('d-none');
+                return true;
+            }
+            return true;
+        }
+        
+        document.getElementById('confirmPassword').addEventListener('input', checkPasswordMatch);
+        
+        // Form submission
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const agreeTerms = document.getElementById('agreeTerms').checked;
+            
+            // Validation
+            if (!validateEmail(email)) {
+                alert('Please enter a valid email address');
+                return;
+            }
+            
+            if (!validateUsername(username)) {
+                alert('Username must be 3-20 characters long');
+                return;
+            }
+            
+            if (!checkPasswordStrength(password)) {
+                alert('Password must meet all requirements');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                alert('Passwords do not match');
+                return;
+            }
+            
+            if (!agreeTerms) {
+                alert('Please agree to the terms and conditions');
+                return;
+            }
+            
+            // Here you would send data to your server
+            console.log('Registration attempt:', {
+                email: email,
+                username: username,
+                password: password
+            });
+            
+            alert('Registration form submitted! Check console for details.');
+        });
+        
+        // Interactive feedback
+        const inputs = document.querySelectorAll('.form-control');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'scale(1.02)';
+            });
+            
+            input.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body>
+</html>
+
+

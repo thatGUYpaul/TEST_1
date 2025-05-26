@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Network Threat Dashboard</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    .navbar-brand { font-weight: 600; }
+    .dropdown-toggle { min-width: 150px; }
+    #exportReport { min-width: 160px; }
+    .card { border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .card-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-weight: 500;
+    }
+    .badge-critical { background-color: #dc3545; }
+    .badge-high { background-color: #fd7e14; }
+    .badge-medium { background-color: #0d6efd; }
+    .badge-low { background-color: #20c997; }
+  </style>
+</head>
+<body class="bg-light">
+  <!-- Enhanced Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+        <i class="fas fa-shield-alt me-2"></i>Threat Analysis Dashboard
+      </a>
+      <div class="d-flex align-items-center">
+        <div class="dropdown me-3">
+          <button class="btn btn-outline-light dropdown-toggle" type="button" id="profileDropdown" data-bs-toggle="dropdown">
+            <i class="fas fa-user-circle me-1"></i> {{ username }}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>My Profile</a></li>
+            <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Account Settings</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+        <button class="btn btn-primary" id="exportReport" data-bs-toggle="modal" data-bs-target="#exportModal">
+          <i class="fas fa-file-export me-1"></i> Export Report
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8">
+        <div class="card mb-4">
+          <div class="card-header">Alert Trend (Last 12 Months)</div>
+          <div class="card-body">
+            <canvas id="alertTrendChart" height="250"></canvas>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-header">Network Traffic (24hr)</div>
+          <div class="card-body">
+            <canvas id="trafficChart" height="250"></canvas>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-header">Recent Alerts</div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>Type</th>
+                    <th>Source IP</th>
+                    <th>Time</th>
+                    <th>Severity</th>
+                  </tr>
+                </thead>
+                <tbody id="alerts-table"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card mb-4">
+          <div class="card-header">Vulnerabilities by Severity</div>
+          <div class="card-body">
+            <canvas id="vulnerabilityChart" height="250"></canvas>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-header">Attack Sources</div>
+          <div class="card-body">
+            <canvas id="attackSourcesChart" height="250"></canvas>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-header">Attack Vectors</div>
+          <div class="card-body">
+            <canvas id="attackVectorsChart" height="250"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Report Modal -->
+  <div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title"><i class="fas fa-file-export me-2"></i>Export Report</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Report Format</label>
+            <select class="form-select" id="reportFormat">
+              <option value="pdf">PDF Document</option>
+              <option value="png">PNG Image</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Time Range</label>
+            <select class="form-select" id="timeRange">
+              <option value="24h">Last 24 Hours</option>
+              <option value="7d">Last 7 Days</option>
+              <option value="30d">Last 30 Days</option>
+              <option value="custom">Custom Range</option>
+            </select>
+          </div>
+          <div class="mb-3" id="customDateRange" style="display: none;">
+            <div class="row">
+              <div class="col-md-6">
+                <label class="form-label">From</label>
+                <input type="date" class="form-control">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">To</label>
+                <input type="date" class="form-control">
+              </div>
+            </div>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="includeCharts" checked>
+            <label class="form-check-label" for="includeCharts">Include all charts</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="confirmExport">
+            <i class="fas fa-download me-1"></i> Export
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize all charts
+    document.addEventListener('DOMContentLoaded', function() {
+      // Alert Trend Chart
+      fetch('/api/alert-trends')
+        .then(res => res.json())
+        .then(data => {
+          new Chart(document.getElementById('alertTrendChart'), {
+            type: 'line',
+            data: {
+              labels: data.labels,
+              datasets: [{
+                label: 'Security Alerts',
+                data: data.counts,
+                backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                borderColor: 'rgba(102, 126, 234, 1)',
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true
+              }]
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                legend: { display: false }
+              }
+            }
+          });
+        });
+
+      // Traffic Chart
+      fetch('/api/traffic')
+        .then(res => res.json())
+        .then(data => {
+          new Chart(document.getElementById('trafficChart'), {
+            type: 'line',
+            data: {
+              labels: data.labels,
+              datasets: [
+                {
+                  label: 'Inbound',
+                  data: data.inbound,
+                  borderColor: 'rgba(75, 192, 192, 1)',
+                  backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                  borderWidth: 2,
+                  tension: 0.4
+                },
+                {
+                  label: 'Outbound',
+                  data: data.outbound,
+                  borderColor: 'rgba(153, 102, 255, 1)',
+                  backgroundColor: 'rgba(153, 102, 255, 0.1)',
+                  borderWidth: 2,
+                  tension: 0.4
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              interaction: {
+                intersect: false,
+                mode: 'index'
+              }
+            }
+          });
+        });
+
+      // Alerts Table
+      fetch('/api/alerts')
+        .then(res => res.json())
+        .then(alerts => {
+          const tbody = document.getElementById('alerts-table');
+          alerts.forEach(alert => {
+            const row = document.createElement('tr');
+            const severityClass = {
+              'Critical': 'badge-critical',
+              'High': 'badge-high',
+              'Medium': 'badge-medium',
+              'Low': 'badge-low'
+            }[alert.severity];
+
+            row.innerHTML = `
+              <td><i class="fas fa-exclamation-triangle me-2"></i>${alert.type}</td>
+              <td><code>${alert.source_ip}</code></td>
+              <td>${new Date(alert.time_reported).toLocaleString()}</td>
+              <td><span class="badge ${severityClass}">${alert.severity}</span></td>
+            `;
+            tbody.appendChild(row);
+          });
+        });
+
+      // Vulnerability Chart
+      fetch('/api/vulnerabilities')
+        .then(res => res.json())
+        .then(data => {
+          new Chart(document.getElementById('vulnerabilityChart'), {
+            type: 'doughnut',
+            data: {
+              labels: data.labels,
+              datasets: [{
+                data: data.counts,
+                backgroundColor: [
+                  'rgba(220, 53, 69, 0.8)',
+                  'rgba(253, 126, 20, 0.8)',
+                  'rgba(13, 110, 253, 0.8)',
+                  'rgba(32, 201, 151, 0.8)'
+                ],
+                borderWidth: 1
+              }]
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                legend: { position: 'bottom' }
+              }
+            }
+          });
+        });
+
+      // Attack Sources
+      fetch('/api/attack-sources')
+        .then(res => res.json())
+        .then(data => {
+          new Chart(document.getElementById('attackSourcesChart'), {
+            type: 'pie',
+            data: {
+              labels: data.labels,
+              datasets: [{
+                data: data.percentages,
+                backgroundColor: [
+                  'rgba(255, 122, 69, 0.8)',
+                  'rgba(54, 207, 201, 0.8)'
+                ]
+              }]
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                legend: { position: 'bottom' },
+                tooltip: {
+                  callbacks: {
+                    label: function(context) {
+                      return `${context.label}: ${context.raw}%`;
+                    }
+                  }
+                }
+              }
+            }
+          });
+        });
+
+      // Attack Vectors
+      fetch('/api/attack-vectors')
+        .then(res => res.json())
+        .then(data => {
+          new Chart(document.getElementById('attackVectorsChart'), {
+            type: 'bar',
+            data: {
+              labels: data.labels,
+              datasets: [{
+                label: 'Attack Count',
+                data: data.counts,
+                backgroundColor: 'rgba(102, 126, 234, 0.8)'
+              }]
+            },
+            options: {
+              indexAxis: 'y',
+              responsive: true,
+              plugins: {
+                legend: { display: false }
+              }
+            }
+          });
+        });
+
+      // Export functionality
+      document.getElementById('timeRange').addEventListener('change', function() {
+        document.getElementById('customDateRange').style.display =
+          this.value === 'custom' ? 'block' : 'none';
+      });
+
+      document.getElementById('confirmExport').addEventListener('click', function() {
+        const format = document.getElementById('reportFormat').value;
+        const timeRange = document.getElementById('timeRange').value;
+        const includeCharts = document.getElementById('includeCharts').checked;
+
+        if (format === 'pdf') {
+          exportToPDF(timeRange, includeCharts);
+        } else {
+          exportToPNG(timeRange, includeCharts);
+        }
+
+        bootstrap.Modal.getInstance(document.getElementById('exportModal')).hide();
+      });
+    });
+
+    function exportToPDF(timeRange, includeCharts) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('landscape');
+
+      // Add title and metadata
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(20);
+      doc.text('Network Security Threat Report', 15, 20);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(12);
+      doc.text(`Generated by: ${document.querySelector('.navbar-brand').textContent}`, 15, 30);
+      doc.text(`Time Range: ${document.getElementById('timeRange').options[document.getElementById('timeRange').selectedIndex].text}`, 15, 40);
+      doc.text(`Generated on: ${new Date().toLocaleString()}`, 15, 50);
+      doc.text(`User: {{ username }}`, 15, 60);
+
+      // Add summary section
+      doc.setFontSize(16);
+      doc.text('Executive Summary', 15, 80);
+      doc.setFontSize(12);
+      doc.text('This report contains the security threat analysis for the selected time period.', 15, 90);
+
+      if (includeCharts) {
+        // Add charts (would need to implement chart to image conversion)
+        doc.addPage();
+        doc.setFontSize(16);
+        doc.text('Alert Trends', 15, 20);
+        // Here you would add the actual chart images
+      }
+
+      doc.save(`threat_report_${new Date().toISOString().slice(0,10)}.pdf`);
+    }
+
+    function exportToPNG(timeRange, includeCharts) {
+      const element = includeCharts ? document.body : document.querySelector('.container');
+
+      html2canvas(element).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `threat_dashboard_${new Date().toISOString().slice(0,10)}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+    }
+  </script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
