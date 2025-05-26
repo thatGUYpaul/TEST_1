@@ -7,18 +7,32 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
-    /* Compact UI Styles */
-    body { background-color: #f8f9fa; }
-    .navbar { box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    :root {
+      --primary-gradient: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    body {
+      background-color: #f8f9fa;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+    .navbar {
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      background: #2575fc !important;
+    }
     .card {
       border: none;
       border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      box-shadow: var(--card-shadow);
       margin-bottom: 1.5rem;
+      transition: transform 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
     }
     .card-header {
-      background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+      background: var(--primary-gradient);
       color: white;
       font-weight: 500;
       padding: 0.75rem 1.25rem;
@@ -26,23 +40,39 @@
     }
     .chart-container {
       position: relative;
-      height: 220px; /* Fixed height for all charts */
+      height: 220px;
       width: 100%;
     }
-    .table-responsive { max-height: 300px; }
+    .table-responsive {
+      max-height: 300px;
+      border-radius: 0 0 8px 8px;
+    }
     .badge {
       font-weight: 500;
       padding: 0.35em 0.65em;
       font-size: 0.75em;
+      letter-spacing: 0.5px;
     }
-    .dropdown-menu { min-width: 200px; }
-    #exportReport { transition: all 0.2s; }
-    #exportReport:hover { transform: translateY(-1px); }
+    .bg-critical { background-color: #dc3545; }
+    .bg-high { background-color: #fd7e14; }
+    .bg-medium { background-color: #0d6efd; }
+    .bg-low { background-color: #20c997; }
+    .toast-notification {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1000;
+      animation: fadeIn 0.3s;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body>
-  <!-- Compact Navigation Bar -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-dark">
     <div class="container">
       <a class="navbar-brand fw-bold" href="{{ url_for('dashboard') }}">
         <i class="fas fa-shield-alt me-2"></i>Threat Dashboard
@@ -60,7 +90,7 @@
           </ul>
         </div>
         <button class="btn btn-light btn-sm" id="exportReport">
-          <i class="fas fa-file-export me-1"></i> Export
+          <i class="fas fa-file-export me-1"></i> Export PDF
         </button>
       </div>
     </div>
@@ -73,7 +103,7 @@
         <!-- Alert Trend Chart -->
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Alert Trends</span>
+            <span><i class="fas fa-chart-line me-2"></i>Alert Trends</span>
             <small class="text-white-50">Last 12 months</small>
           </div>
           <div class="card-body p-3">
@@ -86,7 +116,7 @@
         <!-- Traffic Chart -->
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Network Traffic</span>
+            <span><i class="fas fa-network-wired me-2"></i>Network Traffic</span>
             <small class="text-white-50">Last 24 hours</small>
           </div>
           <div class="card-body p-3">
@@ -98,7 +128,7 @@
 
         <!-- Recent Alerts Table -->
         <div class="card">
-          <div class="card-header">Recent Alerts</div>
+          <div class="card-header"><i class="fas fa-bell me-2"></i>Recent Alerts</div>
           <div class="card-body p-0">
             <div class="table-responsive">
               <table class="table table-hover mb-0">
@@ -110,9 +140,7 @@
                     <th width="20%">Severity</th>
                   </tr>
                 </thead>
-                <tbody id="alerts-table" class="font-monospace">
-                  <!-- Filled by JavaScript -->
-                </tbody>
+                <tbody id="alerts-table" class="font-monospace"></tbody>
               </table>
             </div>
           </div>
@@ -123,7 +151,7 @@
       <div class="col-lg-4">
         <!-- Vulnerability Chart -->
         <div class="card">
-          <div class="card-header">Vulnerabilities</div>
+          <div class="card-header"><i class="fas fa-bug me-2"></i>Vulnerabilities</div>
           <div class="card-body p-3">
             <div class="chart-container">
               <canvas id="vulnerabilityChart"></canvas>
@@ -133,7 +161,7 @@
 
         <!-- Attack Sources -->
         <div class="card">
-          <div class="card-header">Attack Sources</div>
+          <div class="card-header"><i class="fas fa-globe me-2"></i>Attack Sources</div>
           <div class="card-body p-3">
             <div class="chart-container">
               <canvas id="attackSourcesChart"></canvas>
@@ -143,7 +171,7 @@
 
         <!-- Attack Vectors -->
         <div class="card">
-          <div class="card-header">Attack Vectors</div>
+          <div class="card-header"><i class="fas fa-crosshairs me-2"></i>Attack Vectors</div>
           <div class="card-body p-3">
             <div class="chart-container">
               <canvas id="attackVectorsChart"></canvas>
@@ -182,11 +210,26 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { display: false }
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `${context.dataset.label}: ${context.raw}`;
+                }
+              }
+            }
           },
           scales: {
-            y: { beginAtZero: true, grid: { drawBorder: false } },
-            x: { grid: { display: false } }
+            y: {
+              beginAtZero: true,
+              grid: {
+                drawBorder: false,
+                color: 'rgba(0,0,0,0.05)'
+              }
+            },
+            x: {
+              grid: { display: false }
+            }
           }
         }
       });
@@ -219,11 +262,31 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { position: 'bottom' }
+            legend: {
+              position: 'bottom',
+              labels: {
+                padding: 20,
+                usePointStyle: true,
+                pointStyle: 'circle'
+              }
+            }
           },
           scales: {
-            y: { beginAtZero: true, grid: { drawBorder: false } },
-            x: { grid: { display: false } }
+            y: {
+              beginAtZero: true,
+              grid: {
+                drawBorder: false,
+                color: 'rgba(0,0,0,0.05)'
+              }
+            },
+            x: {
+              grid: { display: false },
+              ticks: {
+                maxRotation: 0,
+                autoSkip: true,
+                maxTicksLimit: 12
+              }
+            }
           }
         }
       });
@@ -249,7 +312,14 @@
           maintainAspectRatio: false,
           cutout: '70%',
           plugins: {
-            legend: { position: 'bottom' }
+            legend: {
+              position: 'bottom',
+              labels: {
+                padding: 20,
+                usePointStyle: true,
+                pointStyle: 'rectRounded'
+              }
+            }
           }
         }
       });
@@ -272,7 +342,19 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { position: 'bottom' }
+            legend: {
+              position: 'bottom',
+              labels: {
+                padding: 20
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `${context.label}: ${context.raw}%`;
+                }
+              }
+            }
           }
         }
       });
@@ -296,8 +378,19 @@
             legend: { display: false }
           },
           scales: {
-            x: { beginAtZero: true, grid: { display: false } },
-            y: { grid: { display: false } }
+            x: {
+              beginAtZero: true,
+              grid: {
+                display: false,
+                drawBorder: false
+              }
+            },
+            y: {
+              grid: {
+                display: false,
+                drawBorder: false
+              }
+            }
           }
         }
       });
@@ -314,7 +407,7 @@
           <td><i class="fas fa-${getAlertIcon(alertTypes[i % alertTypes.length])} me-2"></i>${alertTypes[i % alertTypes.length]}</td>
           <td>192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}</td>
           <td>${new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toLocaleString()}</td>
-          <td><span class="badge bg-${getSeverityClass(severity)}">${severity}</span></td>
+          <td><span class="badge bg-${severity.toLowerCase()}">${severity}</span></td>
         `;
         tbody.appendChild(row);
       }
@@ -330,21 +423,74 @@
         return icons[type] || 'exclamation-triangle';
       }
 
-      function getSeverityClass(severity) {
-        const classes = {
-          'Critical': 'danger',
-          'High': 'warning',
-          'Medium': 'primary',
-          'Low': 'success'
-        };
-        return classes[severity] || 'secondary';
-      }
-
-      // Export functionality
+      // Export PDF Functionality
       document.getElementById('exportReport').addEventListener('click', function() {
-        // Implement your export logic here
-        alert('Export functionality would be implemented here');
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('landscape');
+
+        // Add title and metadata
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(20);
+        doc.text('Network Security Threat Report', 15, 20);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(12);
+        doc.text(`Generated by: ${document.querySelector('.navbar-brand').textContent}`, 15, 30);
+        doc.text(`Generated on: ${new Date().toLocaleString()}`, 15, 40);
+        doc.text(`User: {{ username }}`, 15, 50);
+
+        // Add summary section
+        doc.setFontSize(16);
+        doc.text('Executive Summary', 15, 70);
+        doc.setFontSize(12);
+
+        // Add summary text
+        const summaryText = [
+          'This report contains a snapshot of current network security threats.',
+          '',
+          'Key Metrics:',
+          `- Total alerts in last 24 hours: ${Math.floor(Math.random() * 50) + 20}`,
+          `- Critical vulnerabilities: ${Math.floor(Math.random() * 10) + 3}`,
+          `- External attack sources: ${Math.floor(Math.random() * 20) + 70}%`,
+          `- Most common attack vector: ${alertTypes[Math.floor(Math.random() * alertTypes.length)]}`
+        ];
+
+        let yPosition = 80;
+        summaryText.forEach(line => {
+          if (line) {
+            doc.text(line, 15, yPosition);
+            yPosition += 7;
+          } else {
+            yPosition += 4;
+          }
+        });
+
+        // Add current date to filename
+        const dateStr = new Date().toISOString().slice(0, 10);
+
+        // Save the PDF
+        doc.save(`threat_report_${dateStr}.pdf`);
+
+        // Show notification
+        showToast('Report exported successfully!', 'success');
       });
+
+      function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.className = 'toast-notification';
+        toast.innerHTML = `
+          <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        `;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+          toast.remove();
+        }, 3000);
+      }
     });
   </script>
 
